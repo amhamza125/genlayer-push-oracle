@@ -1,36 +1,22 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Cryptographic Push Oracle for GenLayer
 
-## Getting Started
+A multi-LLM Cryptographic Push Oracle for GenLayer, securely routing cross-chain DeFi intents while bypassing VM sandbox limitations.
 
-First, run the development server:
+## Overview
+Standard smart contracts cannot dynamically evaluate live, multi-chain data without relying on centralized oracles. Furthermore, GenLayer's strict GenVM sandbox prevents arbitrary web requests during execution to maintain deterministic state. 
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+This project solves this by introducing a **Cryptographic Push Oracle Architecture**:
+1. **The Frontend** pulls live market telemetry (gas fees, liquidity depth, security scores) across multiple chains.
+2. **Canonicalization:** The data is deterministically sorted and locked into a SHA-256 hash.
+3. **On-Chain Verification:** The payload and hash are submitted to GenLayer, where the contract mathematically proves the data has not been tampered with.
+4. **Multi-LLM Consensus:** GenLayer's AI validators evaluate the verified payload against the user's natural language intent to autonomously route the transaction.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Features
+* **Dynamic Omni-Chain Telemetry:** Simulates real-time market conditions.
+* **AI Intent Presets:** Translates complex DeFi strategies into executable cross-chain routes.
+* **Deterministic Hash Locks:** Prevents payload tampering and bypasses GenVM sandbox restrictions.
+* **Type-Safe Storage:** Utilizes GenLayer `TreeMap` architecture.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Repository Structure
+* `/app/page.tsx`: The Next.js / Framer Motion interactive God-Mode dashboard.
+* `contract.py`: The GenLayer Python Intelligent Contract featuring the multi-LLM consensus engine.
