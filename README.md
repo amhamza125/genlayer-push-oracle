@@ -1,5 +1,9 @@
 # Cryptographic Push Oracle for GenLayer
+## 🎥 Live Demo & Walkthrough
+Watch the full project breakdown and live execution on X:
+[▶️ Watch the Demo](https://x.com/defaulter163/status/2103045500417003836)
 
+---
 A multi-LLM Cryptographic Push Oracle for GenLayer, securely routing cross-chain DeFi intents while bypassing VM sandbox limitations.
 
 ## Overview
