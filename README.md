@@ -23,4 +23,4 @@ This project solves this by introducing a **Cryptographic Push Oracle Architectu
 
 ## Repository Structure
 * `/app/page.tsx`: The Next.js / Framer Motion interactive God-Mode dashboard.
-* `contract.py`: The GenLayer Python Intelligent Contract featuring the multi-LLM consensus engine.
+* `genlayer-push-oracle(CONTRACT).py`: The GenLayer Python Intelligent Contract featuring the multi-LLM consensus engine.
