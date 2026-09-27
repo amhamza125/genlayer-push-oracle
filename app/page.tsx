@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 
 const CONTRACT_ADDRESS = "0x976329B75F7B4775b59E0a66bb9BC7F037142424";
 
@@ -13,10 +13,10 @@ export default function NexusOracleDashboard() {
   const [preferredChain, setPreferredChain] = useState("BASE");
   const [preferredRoute, setPreferredRoute] = useState("Direct Base Bridge");
   
-  const [routingResult, setRoutingResult] = useState(null);
+  const [routingResult, setRoutingResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
-  const generateHash = async (text) => {
+  const generateHash = async (text: string) => {
     const encoder = new TextEncoder();
     const data = encoder.encode(text);
     const hashBuffer = await crypto.subtle.digest('SHA-256', data);
@@ -24,7 +24,7 @@ export default function NexusOracleDashboard() {
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   };
 
-  const handleRouteIntent = async (e) => {
+  const handleRouteIntent = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
