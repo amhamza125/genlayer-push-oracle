@@ -35,7 +35,6 @@ const ALL_PRESETS = [
 ];
 
 // --- REAL-TIME COMPONENT: Historical Analytics ---
-// Fetches live data directly from your deployed GenLayer contract
 const RealTimeAnalytics = ({ userAddress }: { userAddress: string }) => {
   const [stats, setStats] = useState({ intents: 'Syncing...', volume: 'Syncing...', topChain: 'Syncing...' });
   
@@ -48,9 +47,8 @@ const RealTimeAnalytics = ({ userAddress }: { userAddress: string }) => {
           chain: studionet,
           account: userAddress as `0x${string}`,
           transport: custom((window as any).ethereum)
-        });
+        } as any);
 
-        // Reading actual data from your GenLayer contract
         const result = await client.readContract({
           address: CONTRACT_ADDRESS as `0x${string}`,
           functionName: 'get_protocol_overview',
@@ -67,13 +65,12 @@ const RealTimeAnalytics = ({ userAddress }: { userAddress: string }) => {
         }
       } catch (err) {
         console.warn("Analytics Sync Pending (Waiting for RPC):", err);
-        // Fallback realistic UI state if contract read fails during demo
         setStats({ intents: '142', volume: '$845,000', topChain: 'BASE (42%)' });
       }
     };
 
     fetchOnChainStats();
-    const interval = setInterval(fetchOnChainStats, 15000); // Poll every 15s
+    const interval = setInterval(fetchOnChainStats, 15000);
     return () => clearInterval(interval);
   }, [userAddress]);
 
@@ -96,7 +93,6 @@ const RealTimeAnalytics = ({ userAddress }: { userAddress: string }) => {
 };
 
 // --- REAL-TIME COMPONENT: Gas & Liquidity Tracker ---
-// Connects to public mainnet RPCs to pull true live gas fees
 const LiveGasTracker = () => {
   const [gasData, setGasData] = useState([
     { chain: "BASE", gas: "Fetching...", status: "Syncing", color: "bg-blue-400" },
@@ -113,9 +109,9 @@ const LiveGasTracker = () => {
         const baseClient = createPublicClient({ chain: base, transport: http() });
 
         const [ethGas, arbGas, baseGas] = await Promise.all([
-          ethClient.getGasPrice().catch(() => 15000000000n), // fallback 15 gwei
-          arbClient.getGasPrice().catch(() => 100000000n),   // fallback 0.1 gwei
-          baseClient.getGasPrice().catch(() => 5000000n)     // fallback 0.005 gwei
+          ethClient.getGasPrice().catch(() => BigInt(15000000000)),
+          arbClient.getGasPrice().catch(() => BigInt(100000000)),
+          baseClient.getGasPrice().catch(() => BigInt(5000000))
         ]);
 
         const formatFee = (wei: bigint) => Number(formatGwei(wei)).toFixed(4) + ' Gwei';
@@ -123,7 +119,7 @@ const LiveGasTracker = () => {
         setGasData([
           { chain: "BASE", gas: formatFee(baseGas), status: "Optimal", color: "bg-emerald-400" },
           { chain: "ARBITRUM", gas: formatFee(arbGas), status: "Stable", color: "bg-emerald-400" },
-          { chain: "SOLANA", gas: "0.00005 SOL", status: "Optimal", color: "bg-emerald-400" }, // Non-EVM static reference
+          { chain: "SOLANA", gas: "0.00005 SOL", status: "Optimal", color: "bg-emerald-400" }, 
           { chain: "ETHEREUM", gas: formatFee(ethGas), status: Number(formatGwei(ethGas)) > 20 ? "Expensive" : "Standard", color: Number(formatGwei(ethGas)) > 20 ? "bg-red-400" : "bg-yellow-400" },
         ]);
       } catch (err) {
@@ -132,7 +128,7 @@ const LiveGasTracker = () => {
     };
 
     fetchRealGas();
-    const interval = setInterval(fetchRealGas, 12000); // Fetch live gas every 12 seconds
+    const interval = setInterval(fetchRealGas, 12000);
     return () => clearInterval(interval);
   }, []);
 
@@ -169,9 +165,8 @@ const LiveGasTracker = () => {
 };
 
 // --- DYNAMIC COMPONENT: Consensus Visualizer ---
-// Debates dynamically between chains before settling on the final result
 const ConsensusVisualizer = ({ isProcessing, manualOverride, finalTarget }: { isProcessing: boolean, manualOverride: boolean, finalTarget: string | null }) => {
-  const [nodes, setNodes] = useState([
+  const [nodes, setNodes] = useState<{ id: string; state: string; vote: string | null }[]>([
     { id: 'Leader AI (GPT-4)', state: 'Waiting for intent...', vote: null },
     { id: 'Validator 1 (Claude)', state: 'Waiting for intent...', vote: null },
     { id: 'Validator 2 (Gemini)', state: 'Waiting for intent...', vote: null }
@@ -189,7 +184,6 @@ const ConsensusVisualizer = ({ isProcessing, manualOverride, finalTarget }: { is
       return;
     }
 
-    // Phase 1: Analyzing & Debating
     const chains = ["BASE", "ARBITRUM", "SOLANA", "NEAR", "ETHEREUM"];
     let cycleCount = 0;
     
@@ -198,10 +192,9 @@ const ConsensusVisualizer = ({ isProcessing, manualOverride, finalTarget }: { is
       setNodes(prev => prev.map(node => ({
         ...node,
         state: 'Evaluating liquidity & gas...',
-        vote: chains[Math.floor(Math.random() * chains.length)] // Randomly debate chains
+        vote: chains[Math.floor(Math.random() * chains.length)] 
       })));
 
-      // Phase 2: Reach Quorum if we have a final target from the contract
       if (cycleCount > 5 && finalTarget) {
         clearInterval(debateInterval);
         setNodes(prev => prev.map(node => ({
@@ -333,7 +326,7 @@ export default function NexusDashboard() {
     setTerminalLogs([]);
     setEvalResult(null);
     setParsedReceipt(null);
-    setConsensusTarget(null); // Reset target for the visualizer to start debating
+    setConsensusTarget(null);
     setActiveTab('terminal');
     
     const currentIntentId = `NEXUS-SEQ-${Math.floor(1000 + Math.random() * 9000)}`;
@@ -425,15 +418,12 @@ export default function NexusDashboard() {
               const cleaned = JSON.parse(rawPayload);
               const finalJson = typeof cleaned === 'string' ? JSON.parse(cleaned) : cleaned;
               setParsedReceipt(finalJson);
-              
-              // Feed the actual contract result to the visualizer so it stops debating and shows Quorum
               setConsensusTarget(finalJson.target_chain || finalJson.final_target_chain);
             }
           } catch(e) {
             console.error("Parse error", e);
           }
 
-          // Delay slightly so the user sees the "Quorum Reached" state in the terminal before switching tabs
           setTimeout(() => {
             addLog("Consensus reached. Omni-chain route finalized.", 'success');
             setActiveTab('receipt');
@@ -497,7 +487,6 @@ export default function NexusDashboard() {
       <div className="max-w-[1400px] mx-auto px-6 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8 relative z-10">
         
         <div className="lg:col-span-5 space-y-0">
-          {/* REAL TIME ANALYTICS MOUNTED HERE */}
           <RealTimeAnalytics userAddress={userAddress} />
           
           <motion.div 
@@ -547,7 +536,6 @@ export default function NexusDashboard() {
                 </div>
               </div>
 
-              {/* V2 Manual Route Override Toggle */}
               <div className="bg-indigo-900/10 border border-indigo-500/20 rounded-xl p-4 flex flex-col gap-3 shadow-inner mt-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -657,7 +645,6 @@ export default function NexusDashboard() {
             </div>
           </motion.div>
           
-          {/* LIVE PUBLIC RPC GAS TRACKER MOUNTED HERE */}
           <LiveGasTracker />
         </div>
 
@@ -712,7 +699,6 @@ export default function NexusDashboard() {
                             <div className="h-1.5 w-1.5 bg-indigo-400 rounded-full animate-ping" /> Synchronizing GenVM State...
                           </span>
                         </div>
-                        {/* DYNAMIC CONSENSUS VISUALIZER */}
                         <ConsensusVisualizer 
                           isProcessing={isProcessing} 
                           manualOverride={manualOverride} 
