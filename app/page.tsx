@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from 'react';
 
 const CONTRACT_ADDRESS = "0x976329B75F7B4775b59E0a66bb9BC7F037142424";
