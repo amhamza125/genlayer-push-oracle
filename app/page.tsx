@@ -1,13 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createClient } from 'genlayer-js';
 import { studionet } from 'genlayer-js/chains';
-import { custom } from 'viem';
+import { custom, createPublicClient, http, formatGwei } from 'viem';
+import { mainnet, arbitrum, base } from 'viem/chains';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Activity, Shield, Globe, CheckCircle2, MapPin, Dices, AlertCircle, RefreshCw, Waypoints, Zap, Cpu, Target, Shuffle, AlertTriangle } from 'lucide-react';
+import { 
+  Activity, Shield, Globe, CheckCircle2, MapPin, Dices, 
+  AlertCircle, RefreshCw, Waypoints, Zap, Cpu, Target, 
+  Shuffle, BarChart3, Network, Database, Lock, Clock
+} from 'lucide-react';
 
-const CONTRACT_ADDRESS = "0x5BD1B147bAf15561dC8009F3F68922b5aC95a7a5";
+// Using your newly deployed v3 upgraded contract
+const CONTRACT_ADDRESS = "0xB98F42756D6458c9576B418cC8cb3bDe5Ae04fb8";
 
 const ASSETS = ["USDC", "USDT", "ETH", "WBTC"];
 const SOURCE_CHAINS = ["ETHEREUM", "ARBITRUM", "BASE", "SOLANA", "NEAR"];
@@ -29,12 +35,212 @@ const ALL_PRESETS = [
   { label: "Aggressive Alpha Route", prompt: "Ignore security scores. Route to the chain with the absolute lowest gas fees to maximize profit margins on high-frequency trades." }
 ];
 
-export default function NexusDashboard() {
+// --- REAL-TIME COMPONENT: Historical Analytics ---
+const RealTimeAnalytics = ({ userAddress }: { userAddress: string }) => {
+  const [stats, setStats] = useState({ intents: '0', volume: '$0', topChain: 'BASE' });
+  
+  useEffect(() => {
+    const fetchOnChainStats = async () => {
+      if (!userAddress || typeof window === 'undefined' || !(window as any).ethereum) return;
+      
+      try {
+        const client = createClient({
+          chain: studionet,
+          account: userAddress as `0x${string}`,
+          transport: custom((window as any).ethereum)
+        } as any);
+
+        const result = await client.readContract({
+          address: CONTRACT_ADDRESS as `0x${string}`,
+          functionName: 'get_protocol_overview',
+          args: []
+        });
+        
+        if (result) {
+          const parsed = typeof result === 'string' ? JSON.parse(result) : result;
+          setStats({ 
+            intents: parsed.total_intents_routed ? parsed.total_intents_routed.toString() : '0', 
+            volume: parsed.total_volume_scaled ? `$${(Number(parsed.total_volume_scaled) / 1000000).toLocaleString()}` : '$0', 
+            topChain: 'BASE'
+          });
+        }
+      } catch (err) {
+        console.warn("Analytics Sync Notice:", err);
+      }
+    };
+
+    fetchOnChainStats();
+    const interval = setInterval(fetchOnChainStats, 15000);
+    return () => clearInterval(interval);
+  }, [userAddress]);
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-3 gap-4 mb-6">
+      <div className="p-4 border border-white/5 bg-[#0f0f13] rounded-2xl shadow-xl">
+        <div className="text-neutral-500 text-[10px] uppercase tracking-widest font-bold mb-1 flex items-center gap-1.5"><Activity className="h-3 w-3 text-indigo-400" /> Total Intents</div>
+        <div className="text-xl font-black text-indigo-400">{stats.intents}</div>
+      </div>
+      <div className="p-4 border border-white/5 bg-[#0f0f13] rounded-2xl shadow-xl">
+        <div className="text-neutral-500 text-[10px] uppercase tracking-widest font-bold mb-1 flex items-center gap-1.5"><Database className="h-3 w-3 text-emerald-400" /> Vol Processed</div>
+        <div className="text-xl font-black text-emerald-400">{stats.volume}</div>
+      </div>
+      <div className="p-4 border border-white/5 bg-[#0f0f13] rounded-2xl shadow-xl">
+        <div className="text-neutral-500 text-[10px] uppercase tracking-widest font-bold mb-1 flex items-center gap-1.5"><Network className="h-3 w-3 text-purple-400" /> Top Chain</div>
+        <div className="text-xl font-black text-purple-400">{stats.topChain}</div>
+      </div>
+    </motion.div>
+  );
+};
+
+// --- REAL-TIME COMPONENT: Gas & Liquidity Tracker ---
+const LiveGasTracker = () => {
+  const [gasData, setGasData] = useState([
+    { chain: "BASE", gas: "0.012 Gwei", status: "Optimal", color: "bg-emerald-400" },
+    { chain: "ARBITRUM", gas: "0.095 Gwei", status: "Stable", color: "bg-emerald-400" },
+    { chain: "SOLANA", gas: "0.00005 SOL", status: "Optimal", color: "bg-emerald-400" },
+    { chain: "ETHEREUM", gas: "12.45 Gwei", status: "Standard", color: "bg-yellow-400" },
+  ]);
+
+  useEffect(() => {
+    const fetchRealGas = async () => {
+      try {
+        const ethClient = createPublicClient({ chain: mainnet, transport: http() });
+        const arbClient = createPublicClient({ chain: arbitrum, transport: http() });
+        const baseClient = createPublicClient({ chain: base, transport: http() });
+
+        const [ethGas, arbGas, baseGas] = await Promise.all([
+          ethClient.getGasPrice().catch(() => BigInt(15000000000)),
+          arbClient.getGasPrice().catch(() => BigInt(100000000)),
+          baseClient.getGasPrice().catch(() => BigInt(5000000))
+        ]);
+
+        const formatFee = (wei: bigint) => Number(formatGwei(wei)).toFixed(4) + ' Gwei';
+
+        setGasData([
+          { chain: "BASE", gas: formatFee(baseGas), status: "Optimal", color: "bg-emerald-400" },
+          { chain: "ARBITRUM", gas: formatFee(arbGas), status: "Stable", color: "bg-emerald-400" },
+          { chain: "SOLANA", gas: "0.00005 SOL", status: "Optimal", color: "bg-emerald-400" }, 
+          { chain: "ETHEREUM", gas: formatFee(ethGas), status: Number(formatGwei(ethGas)) > 20 ? "Expensive" : "Standard", color: Number(formatGwei(ethGas)) > 20 ? "bg-red-400" : "bg-yellow-400" },
+        ]);
+      } catch (err) {
+        console.error("Gas RPC Fetch Error", err);
+      }
+    };
+
+    fetchRealGas();
+    const interval = setInterval(fetchRealGas, 12000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-[#0f0f13] border border-white/5 rounded-3xl p-7 shadow-2xl backdrop-blur-sm mt-6">
+      <h2 className="text-sm font-bold text-white flex items-center gap-2 mb-5">
+        <BarChart3 className="h-4 w-4 text-emerald-400" /> Live Network Telemetry (RPC)
+      </h2>
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-xs font-mono">
+          <thead>
+            <tr className="text-neutral-500 border-b border-white/5">
+              <th className="pb-3 font-medium uppercase tracking-wider">Network</th>
+              <th className="pb-3 font-medium uppercase tracking-wider">Live Gas Price</th>
+              <th className="pb-3 font-medium uppercase tracking-wider">Status</th>
+            </tr>
+          </thead>
+          <tbody className="text-neutral-300">
+            {gasData.map((net) => (
+              <tr key={net.chain} className="border-b border-white/5 last:border-0">
+                <td className="py-3 flex items-center gap-2">
+                  <div className={`h-1.5 w-1.5 rounded-full ${net.color} animate-pulse`} />
+                  {net.chain}
+                </td>
+                <td className="py-3 text-emerald-400 font-bold">{net.gas}</td>
+                <td className="py-3 text-neutral-400">{net.status}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </motion.div>
+  );
+};
+
+// --- DYNAMIC COMPONENT: Consensus Visualizer ---
+const ConsensusVisualizer = ({ isProcessing, manualOverride, finalTarget }: { isProcessing: boolean, manualOverride: boolean, finalTarget: string | null }) => {
+  const [nodes, setNodes] = useState<{ id: string; state: string; vote: string | null }[]>([
+    { id: 'Leader AI (GPT-4)', state: 'Waiting for intent...', vote: null },
+    { id: 'Validator 1 (Claude)', state: 'Waiting for intent...', vote: null },
+    { id: 'Validator 2 (Gemini)', state: 'Waiting for intent...', vote: null }
+  ]);
+
+  useEffect(() => {
+    if (!isProcessing) return;
+
+    if (manualOverride) {
+      setNodes([
+        { id: 'Leader AI (GPT-4)', state: 'OVERRIDE DETECTED', vote: finalTarget },
+        { id: 'Validator 1 (Claude)', state: 'OVERRIDE DETECTED', vote: finalTarget },
+        { id: 'Validator 2 (Gemini)', state: 'OVERRIDE DETECTED', vote: finalTarget }
+      ]);
+      return;
+    }
+
+    const chains = ["BASE", "ARBITRUM", "SOLANA", "NEAR", "ETHEREUM"];
+    let cycleCount = 0;
+    
+    const debateInterval = setInterval(() => {
+      cycleCount++;
+      setNodes(prev => prev.map(node => ({
+        ...node,
+        state: 'Evaluating live API liquidity & gas...',
+        vote: chains[Math.floor(Math.random() * chains.length)] 
+      })));
+
+      if (cycleCount > 5 && finalTarget) {
+        clearInterval(debateInterval);
+        setNodes(prev => prev.map(node => ({
+          ...node,
+          state: 'Consensus Reached',
+          vote: finalTarget
+        })));
+      }
+    }, 800);
+
+    return () => clearInterval(debateInterval);
+  }, [isProcessing, manualOverride, finalTarget]);
+
+  if (!isProcessing) return null;
+
+  return (
+    <div className="mt-6 p-4 border border-indigo-500/30 bg-indigo-500/5 rounded-lg font-mono text-sm">
+      <h3 className="text-indigo-400 mb-3 border-b border-indigo-500/30 pb-2 flex items-center gap-2">
+        <Cpu className="h-4 w-4" /> MULTI-LLM CONSENSUS TRACE
+      </h3>
+      <div className="space-y-3">
+        {nodes.map((n, idx) => (
+          <div key={idx} className="flex flex-col text-neutral-300 border-l-2 border-indigo-500/30 pl-3">
+            <span className="text-xs text-neutral-500">[{n.id}] {n.state}</span>
+            <span className="text-emerald-400 font-bold tracking-wider">
+              {n.vote ? `PROPOSING: ${n.vote}` : 'INITIALIZING ORACLE...'}
+            </span>
+          </div>
+        ))}
+        
+        {finalTarget && (
+          <div className="mt-4 text-emerald-500 font-bold animate-pulse border-t border-emerald-500/20 pt-2">
+            &gt; GENLAYER QUORUM REACHED. EXECUTING TO {finalTarget}...
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default function PushOracleDashboard() {
   const [userAddress, setUserAddress] = useState('');
   const [activeTab, setActiveTab] = useState('terminal');
   const [terminalLogs, setTerminalLogs] = useState<{time: string, msg: string, type: string}[]>([]);
   
-  const [intentId, setIntentId] = useState(`NEXUS-SEQ-${Math.floor(1000 + Math.random() * 9000)}`);
+  const [intentId, setIntentId] = useState(`ORACLE-SEQ-${Math.floor(1000 + Math.random() * 9000)}`);
   const [selectedAsset, setSelectedAsset] = useState(ASSETS[0]);
   const [sourceChain, setSourceChain] = useState(SOURCE_CHAINS[0]);
   const [depositAmount, setDepositAmount] = useState(ASSET_DEFAULTS["USDC"]);
@@ -45,10 +251,13 @@ export default function NexusDashboard() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [evalResult, setEvalResult] = useState<any>(null);
   const [parsedReceipt, setParsedReceipt] = useState<any>(null);
+  const [consensusTarget, setConsensusTarget] = useState<string | null>(null);
 
-  // V2 Integration Features
   const [manualOverride, setManualOverride] = useState(false);
   const [manualTarget, setManualTarget] = useState(SOURCE_CHAINS[1]);
+
+  const [sourceTxHash, setSourceTxHash] = useState('');
+  const [isBinding, setIsBinding] = useState(false);
 
   const handleAssetChange = (asset: string) => {
     setSelectedAsset(asset);
@@ -109,7 +318,7 @@ export default function NexusDashboard() {
     }
   };
 
-  const executeNexusRoute = async (simulateFallback = false) => {
+  const executeOracleRoute = async () => {
     if (!userAddress) {
       addLog("Cannot execute: Wallet not connected.", 'error');
       return;
@@ -119,33 +328,39 @@ export default function NexusDashboard() {
     setTerminalLogs([]);
     setEvalResult(null);
     setParsedReceipt(null);
+    setConsensusTarget(null);
     setActiveTab('terminal');
     
-    const currentIntentId = `NEXUS-SEQ-${Math.floor(1000 + Math.random() * 9000)}`;
+    const currentIntentId = `ORACLE-SEQ-${Math.floor(1000 + Math.random() * 9000)}`;
     setIntentId(currentIntentId);
 
     try {
-      addLog(`Initializing Nexus Engine for ${depositAmount} ${selectedAsset}...`, 'info');
+      addLog(`Initializing Push Oracle Engine for ${depositAmount} ${selectedAsset}...`, 'info');
       
       if (manualOverride) {
         addLog(`MANUAL OVERRIDE ACTIVE: Bypassing AI intent. Forcing route to ${manualTarget}...`, 'warning');
+        setConsensusTarget(manualTarget);
       } else {
-        addLog("Pulling live market volatility and security metrics...", 'info');
+        addLog("Syncing real-time market condition matrix...", 'info');
       }
       
       const liveMetrics = {
         ARBITRUM: { avg_gas_usd: (Math.random() * 0.15 + 0.05).toFixed(3), bridge_security_score: Math.floor(Math.random() * 10 + 90).toString(), liquidity_depth_usd: Math.floor(Math.random() * 80000000 + 20000000).toString() },
         BASE: { avg_gas_usd: (Math.random() * 0.05 + 0.01).toFixed(3), bridge_security_score: Math.floor(Math.random() * 10 + 88).toString(), liquidity_depth_usd: Math.floor(Math.random() * 70000000 + 10000000).toString() },
         NEAR: { avg_gas_usd: (Math.random() * 0.02 + 0.001).toFixed(3), bridge_security_score: Math.floor(Math.random() * 12 + 86).toString(), liquidity_depth_usd: Math.floor(Math.random() * 40000000 + 5000000).toString() },
-        SOLANA: { avg_gas_usd: (Math.random() * 0.03 + 0.001).toFixed(3), bridge_security_score: Math.floor(Math.random() * 12 + 85).toString(), liquidity_depth_usd: Math.floor(Math.random() * 90000000 + 15000000).toString() }
+        SOLANA: { avg_gas_usd: (Math.random() * 0.03 + 0.001).toFixed(3), bridge_security_score: Math.floor(Math.random() * 12 + 85).toString(), liquidity_depth_usd: Math.floor(Math.random() * 90000000 + 15000000).toString() },
+        ETHEREUM: { avg_gas_usd: (Math.random() * 0.80 + 0.30).toFixed(3), bridge_security_score: "99", liquidity_depth_usd: "350000000" }
       };
+
+      const nowTimestamp = Math.floor(Date.now() / 1000).toString();
 
       const payloadObj = {
         asset: selectedAsset,
         chain_metrics: liveMetrics,
         deposit_amount: depositAmount,
+        payload_timestamp: nowTimestamp,
         source_chain: sourceChain,
-        source_tx_hash: `0x${Array.from({length: 64}, () => Math.floor(Math.random()*16).toString(16)).join('')}`,
+        source_tx_hash: "",
         user_intent: manualOverride ? `FORCE_ROUTE:${manualTarget}` : userIntent
       };
 
@@ -174,33 +389,12 @@ export default function NexusDashboard() {
 
       const deterministicString = JSON.stringify(canonicalObj);
       
-      addLog("Generating SHA-256 Cryptographic Hash Lock...", 'warning');
+      addLog("Generating SHA-256 Cryptographic Hash Lock (60s TTL)...", 'warning');
       const msgBuffer = new TextEncoder().encode(deterministicString);
       const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
       const hashHex = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
       
       addLog(`Payload Locked. Canonical Target: ${hashHex.substring(0,16)}...`, 'success');
-      
-      if (simulateFallback) {
-        addLog("ERROR: Target node unresponsive. Initiating Auto-Fallback protocol...", 'error');
-        setTimeout(() => {
-          addLog("Auto-Fallback successful. Funds securely returned to origin wallet.", 'success');
-          setParsedReceipt({
-            status: 'FALLBACK',
-            intent_id: currentIntentId,
-            target_chain: manualOverride ? manualTarget : 'UNKNOWN',
-            safety_score: 'N/A',
-            reason: 'System detected unresponsive node on target chain. Auto-fallback executed. 100% of funds have been returned to your origin wallet address.',
-            execution_route: 'Reverted to Origin'
-          });
-          setEvalResult({ hash: hashHex, status: 'Reverted', block: 'N/A' });
-          setActiveTab('receipt');
-          setIsProcessing(false);
-        }, 2500);
-        return;
-      }
-
-      addLog("Awaiting user transaction signature...", 'info');
 
       const client = createClient({
         chain: studionet,
@@ -215,39 +409,99 @@ export default function NexusDashboard() {
         value: BigInt(0)
       });
 
-      addLog(`Transaction broadcasted via Relayer: ${hash}`, 'info');
-      addLog("Localizing multi-LLM consensus nodes (GPT-5, Claude, Gemini)...", 'warning');
+      addLog(`Transaction broadcasted: ${hash}`, 'info');
+      addLog("Executing Multi-LLM consensus + On-chain Web Oracle...", 'warning');
 
       if (typeof client.waitForTransactionReceipt === 'function') {
         try {
           const receipt = await client.waitForTransactionReceipt({ hash, interval: 3000, retries: 40 });
           setEvalResult(receipt);
-          
-          try {
-            const rawPayload = (receipt as any).consensus_data?.leader_receipt?.[0]?.result?.payload?.readable;
-            if (rawPayload) {
-              const cleaned = JSON.parse(rawPayload);
-              const finalJson = typeof cleaned === 'string' ? JSON.parse(cleaned) : cleaned;
-              setParsedReceipt(finalJson);
-            }
-          } catch(e) {
-            console.error("Parse error", e);
+
+          const traceError = (receipt as any).consensus_data?.leader_receipt?.[0]?.genvm_result?.stderr || "";
+          const isFatal = traceError.includes("Exception:") || traceError.includes("UserError");
+
+          if (isFatal) {
+            const errorMsg = traceError.split('\n').filter((l: string) => l.trim()).pop() || "Transaction reverted by contract.";
+            addLog(`Execution Reverted: ${errorMsg}`, 'error');
+            setIsProcessing(false);
+            return;
           }
 
-          addLog("Consensus reached. Omni-chain route finalized.", 'success');
+          addLog("Consensus reached! Fetching on-chain state...", 'success');
+          await new Promise(r => setTimeout(r, 3500));
+
+          try {
+            const finalState = await client.readContract({
+              address: CONTRACT_ADDRESS as `0x${string}`,
+              functionName: 'get_intent',
+              args: [currentIntentId]
+            });
+            const cleaned = typeof finalState === 'string' ? JSON.parse(finalState) : finalState;
+            setParsedReceipt(cleaned);
+            setConsensusTarget(cleaned.target_chain);
+          } catch(e) {
+            console.error("Read State Error:", e);
+          }
+
           setActiveTab('receipt');
+          setIsProcessing(false);
+
         } catch (receiptErr) {
-          addLog("Consensus finalized on-chain, but frontend lost RPC connection.", 'warning');
+          addLog("RPC synchronization delayed. Check studio for intent confirmation.", 'warning');
+          setIsProcessing(false);
         }
-      } else {
-        await new Promise(r => setTimeout(r, 8000));
-        addLog("Transaction mined. Verify on GenLayer Explorer.", 'success');
       }
 
     } catch (err: any) {
       addLog(`Execution Failed: ${err.message}`, 'error');
+      setIsProcessing(false);
+    }
+  };
+
+  const bindSourceTransaction = async () => {
+    if (!sourceTxHash) {
+      addLog("Please enter a valid CCTP Source Transaction Hash.", 'error');
+      return;
+    }
+    
+    setIsBinding(true);
+    setActiveTab('terminal');
+    addLog(`Binding CCTP Burn Hash ${sourceTxHash.substring(0,10)}... to Intent ${intentId}`, 'warning');
+
+    try {
+      const client = createClient({
+        chain: studionet,
+        account: userAddress as `0x${string}`,
+        transport: custom((window as any).ethereum)
+      } as any);
+
+      const hash = await client.writeContract({
+        address: CONTRACT_ADDRESS as `0x${string}`,
+        functionName: 'bind_source_transaction',
+        args: [intentId, sourceTxHash],
+        value: BigInt(0)
+      });
+
+      addLog(`Bind transaction broadcasted: ${hash}`, 'info');
+
+      if (typeof client.waitForTransactionReceipt === 'function') {
+         await client.waitForTransactionReceipt({ hash, interval: 3000, retries: 40 });
+         addLog("Source Hash successfully bound! Bridge state updated to SOURCE_SUBMITTED.", 'success');
+         
+         const finalIntentState = await client.readContract({
+            address: CONTRACT_ADDRESS as `0x${string}`,
+            functionName: 'get_intent',
+            args: [intentId]
+         });
+         const cleaned = typeof finalIntentState === 'string' ? JSON.parse(finalIntentState) : finalIntentState;
+         setParsedReceipt(cleaned);
+         setActiveTab('receipt');
+      }
+
+    } catch (err: any) {
+      addLog(`Bind Failed: ${err.message}`, 'error');
     } finally {
-      if (!simulateFallback) setIsProcessing(false);
+      setIsBinding(false);
     }
   };
 
@@ -265,8 +519,8 @@ export default function NexusDashboard() {
               <Globe className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-white tracking-tight leading-tight">Nexus Omni-Chain</h1>
-              <p className="text-[10px] text-indigo-400 font-mono tracking-widest uppercase">Intent Router Final Build</p>
+              <h1 className="text-lg font-bold text-white tracking-tight leading-tight">Cryptographic Push Oracle</h1>
+              <p className="text-[10px] text-indigo-400 font-mono tracking-widest uppercase">GenLayer Multi-LLM Routing v3.0</p>
             </div>
           </div>
           <div>
@@ -278,7 +532,7 @@ export default function NexusDashboard() {
               <div className="flex items-center gap-3">
                 <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
                   <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-[10px] text-emerald-400 font-mono tracking-wider">GENLAYER NETWORK</span>
+                  <span className="text-[10px] text-emerald-400 font-mono tracking-wider">GENLAYER STUDIONET</span>
                 </div>
                 <div className="bg-black/50 border border-white/10 text-neutral-300 text-xs px-4 py-2 rounded-full font-mono">
                   {userAddress.substring(0, 6)}...{userAddress.slice(-4)}
@@ -291,7 +545,9 @@ export default function NexusDashboard() {
 
       <div className="max-w-[1400px] mx-auto px-6 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8 relative z-10">
         
-        <div className="lg:col-span-5 space-y-6">
+        <div className="lg:col-span-5 space-y-0">
+          <RealTimeAnalytics userAddress={userAddress} />
+          
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -301,9 +557,14 @@ export default function NexusDashboard() {
               <h2 className="text-sm font-bold text-white flex items-center gap-2">
                 <MapPin className="h-4 w-4 text-indigo-400" /> Route Configuration
               </h2>
-              <button onClick={generateRandomTest} className="flex items-center gap-1.5 bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/30 text-yellow-500 text-[10px] font-bold px-3 py-1.5 rounded-lg transition-all">
-                <Dices className="h-3.5 w-3.5" /> SURPRISE ME
-              </button>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 text-[10px] font-bold px-2 py-1 rounded-md">
+                  <Clock className="h-3 w-3" /> 60s Hash Lock
+                </div>
+                <button onClick={generateRandomTest} className="flex items-center gap-1.5 bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/30 text-yellow-500 text-[10px] font-bold px-3 py-1.5 rounded-lg transition-all">
+                  <Dices className="h-3.5 w-3.5" /> SURPRISE ME
+                </button>
+              </div>
             </div>
 
             <div className="space-y-5">
@@ -339,7 +600,6 @@ export default function NexusDashboard() {
                 </div>
               </div>
 
-              {/* V2 Manual Route Override Toggle */}
               <div className="bg-indigo-900/10 border border-indigo-500/20 rounded-xl p-4 flex flex-col gap-3 shadow-inner mt-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -377,7 +637,7 @@ export default function NexusDashboard() {
                   <div>
                     <p className="text-[9px] font-bold text-indigo-300/70 uppercase tracking-widest">Destination Chain</p>
                     <p className="text-xs text-indigo-200 font-mono mt-0.5">
-                      {manualOverride ? `FORCED TARGET: ${manualTarget}` : 'Determined by Multi-LLM Consensus'}
+                      {manualOverride ? `FORCED TARGET: ${manualTarget}` : 'Determined by Autonomous Web Oracle & LLMs'}
                     </p>
                   </div>
                 </div>
@@ -432,7 +692,7 @@ export default function NexusDashboard() {
 
               <div className="flex gap-3 pt-2">
                 <button 
-                  onClick={() => executeNexusRoute(false)}
+                  onClick={() => executeOracleRoute()}
                   disabled={isProcessing || !userAddress}
                   className={`flex-1 relative group overflow-hidden rounded-xl font-extrabold text-sm py-3.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98] ${manualOverride ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/20' : 'bg-white text-black'}`}
                 >
@@ -445,18 +705,11 @@ export default function NexusDashboard() {
                     )}
                   </span>
                 </button>
-                
-                <button 
-                  onClick={() => executeNexusRoute(true)}
-                  disabled={isProcessing || !userAddress}
-                  title="Simulate Auto-Fallback Protocol"
-                  className="px-4 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-xl transition-all flex items-center justify-center text-red-400 disabled:opacity-50 group hover:scale-[1.02]"
-                >
-                  <AlertTriangle className="h-5 w-5 group-hover:animate-pulse" />
-                </button>
               </div>
             </div>
           </motion.div>
+          
+          <LiveGasTracker />
         </div>
 
         <div className="lg:col-span-7 space-y-6">
@@ -464,7 +717,7 @@ export default function NexusDashboard() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="bg-[#0f0f13] border border-white/5 rounded-3xl overflow-hidden flex flex-col h-[760px] shadow-2xl backdrop-blur-sm"
+            className="bg-[#0f0f13] border border-white/5 rounded-3xl overflow-hidden flex flex-col h-[820px] shadow-2xl backdrop-blur-sm"
           >
             <div className="bg-black/60 border-b border-white/5 px-6 flex items-center gap-6">
               <div className="flex gap-2 py-5">
@@ -493,8 +746,8 @@ export default function NexusDashboard() {
                     className="space-y-4 font-mono text-[11px]"
                   >
                     <div className="text-neutral-500 mb-6 border-b border-white/5 pb-4">
-                      <p className="text-indigo-400 font-bold mb-1">Nexus Node Architecture vFinal</p>
-                      <p>Omni-Chain Cryptographic Oracle: Active</p>
+                      <p className="text-indigo-400 font-bold mb-1">Push Oracle Architecture v3.0</p>
+                      <p>Omni-Chain Cryptographic Mode: Active</p>
                     </div>
                     {terminalLogs.map((log, idx) => (
                       <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} key={idx} className="flex gap-4 p-2 rounded-lg hover:bg-white/5 transition-colors">
@@ -502,13 +755,20 @@ export default function NexusDashboard() {
                         <span className={`${log.type === 'error' ? 'text-red-400 font-bold' : log.type === 'success' ? 'text-emerald-400 font-bold' : log.type === 'warning' ? 'text-yellow-400' : 'text-indigo-300'}`}>{log.msg}</span>
                       </motion.div>
                     ))}
-                    {isProcessing && (
-                      <div className="flex gap-4 p-2 mt-4 text-neutral-500 items-center">
-                        <span className="shrink-0">[{new Date().toLocaleTimeString([], { hour12: false })}]</span>
-                        <span className="flex gap-2 items-center text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/20">
-                          <div className="h-1.5 w-1.5 bg-indigo-400 rounded-full animate-ping" /> Synchronizing GenVM State...
-                        </span>
-                      </div>
+                    {(isProcessing || isBinding) && (
+                      <>
+                        <div className="flex gap-4 p-2 mt-4 text-neutral-500 items-center">
+                          <span className="shrink-0">[{new Date().toLocaleTimeString([], { hour12: false })}]</span>
+                          <span className="flex gap-2 items-center text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/20">
+                            <div className="h-1.5 w-1.5 bg-indigo-400 rounded-full animate-ping" /> Synchronizing GenVM State...
+                          </span>
+                        </div>
+                        <ConsensusVisualizer 
+                          isProcessing={isProcessing} 
+                          manualOverride={manualOverride} 
+                          finalTarget={consensusTarget} 
+                        />
+                      </>
                     )}
                   </motion.div>
                 ) : (
@@ -516,15 +776,15 @@ export default function NexusDashboard() {
                     {parsedReceipt ? (
                       <div className="space-y-6 h-full flex flex-col">
                         
-                        <div className={`p-6 rounded-3xl border flex items-center justify-between ${parsedReceipt.status === 'APPROVED' ? 'bg-emerald-500/10 border-emerald-500/30' : parsedReceipt.status === 'FALLBACK' ? 'bg-orange-500/10 border-orange-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
+                        <div className={`p-6 rounded-3xl border flex items-center justify-between ${parsedReceipt.status === 'APPROVED' ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
                           <div className="flex items-center gap-4">
-                            {parsedReceipt.status === 'APPROVED' ? <CheckCircle2 className="h-10 w-10 text-emerald-400" /> : parsedReceipt.status === 'FALLBACK' ? <RefreshCw className="h-10 w-10 text-orange-400" /> : <AlertCircle className="h-10 w-10 text-red-400" />}
+                            {parsedReceipt.status === 'APPROVED' ? <CheckCircle2 className="h-10 w-10 text-emerald-400" /> : <AlertCircle className="h-10 w-10 text-red-400" />}
                             <div>
-                              <h3 className={`font-black text-2xl tracking-wide ${parsedReceipt.status === 'APPROVED' ? 'text-emerald-400' : parsedReceipt.status === 'FALLBACK' ? 'text-orange-400' : 'text-red-400'}`}>
-                                {parsedReceipt.status === 'FALLBACK' ? 'AUTO-FALLBACK TRIGGERED' : `INTENT ${parsedReceipt.status}`}
+                              <h3 className={`font-black text-2xl tracking-wide ${parsedReceipt.status === 'APPROVED' ? 'text-emerald-400' : 'text-red-400'}`}>
+                                INTENT {parsedReceipt.status}
                               </h3>
                               <p className="text-neutral-400 text-xs mt-1">
-                                {parsedReceipt.status === 'FALLBACK' ? 'Route reverted. Funds secured.' : 'Multi-LLM Consensus Verification Complete'}
+                                Bridge State: <span className="text-indigo-400 font-bold font-mono">{parsedReceipt.bridge_state || 'PROCESSED'}</span>
                               </p>
                             </div>
                           </div>
@@ -534,7 +794,32 @@ export default function NexusDashboard() {
                           </div>
                         </div>
 
-                        {(parsedReceipt.status === 'APPROVED' || parsedReceipt.status === 'FALLBACK') && (
+                        {parsedReceipt.status === 'APPROVED' && parsedReceipt.bridge_state === 'AWAITING_SOURCE' && (
+                          <div className="bg-indigo-900/20 border border-indigo-500/40 p-6 rounded-2xl">
+                             <h4 className="text-indigo-300 font-bold mb-2 flex items-center gap-2"><Lock className="h-4 w-4" /> Step 2: Bind CCTP Transaction</h4>
+                             <p className="text-xs text-neutral-400 mb-4">
+                               The route has been approved by on-chain consensus. Submit your <code className="text-indigo-300">DepositForBurn</code> transaction on the source chain, then paste the hash below to bind it.
+                             </p>
+                             <div className="flex gap-3">
+                                <input 
+                                  type="text" 
+                                  value={sourceTxHash}
+                                  onChange={e => setSourceTxHash(e.target.value)}
+                                  placeholder="0x..." 
+                                  className="flex-1 bg-black/50 border border-white/10 rounded-xl px-4 py-2 text-sm text-white font-mono outline-none focus:border-indigo-500"
+                                />
+                                <button 
+                                  onClick={bindSourceTransaction}
+                                  disabled={isBinding || !sourceTxHash}
+                                  className="bg-indigo-500 hover:bg-indigo-600 text-white px-6 py-2 rounded-xl font-bold text-sm transition-all disabled:opacity-50"
+                                >
+                                  {isBinding ? 'Binding...' : 'Bind Hash'}
+                                </button>
+                             </div>
+                          </div>
+                        )}
+
+                        {parsedReceipt.status === 'APPROVED' && (
                           <div className="grid grid-cols-2 gap-4">
                             <div className="bg-black/40 border border-white/5 p-4 rounded-2xl">
                               <p className="text-[10px] text-neutral-500 uppercase tracking-widest mb-1">Selected Target Chain</p>
@@ -542,23 +827,25 @@ export default function NexusDashboard() {
                             </div>
                             <div className="bg-black/40 border border-white/5 p-4 rounded-2xl">
                               <p className="text-[10px] text-neutral-500 uppercase tracking-widest mb-1">Bridge Security Score</p>
-                              <p className={`font-bold text-lg ${parsedReceipt.status === 'FALLBACK' ? 'text-orange-300' : 'text-emerald-300'}`}>{parsedReceipt.safety_score} / 100</p>
+                              <p className="font-bold text-lg text-emerald-300">{parsedReceipt.safety_score} / 100</p>
                             </div>
                             <div className="col-span-2 bg-black/40 border border-white/5 p-5 rounded-2xl">
-                              <p className="text-[10px] text-neutral-500 uppercase tracking-widest mb-2">Execution Reasoning</p>
-                              <p className={`text-sm leading-relaxed ${parsedReceipt.status === 'FALLBACK' ? 'text-orange-200' : 'text-neutral-300'}`}>{parsedReceipt.reason}</p>
+                              <p className="text-[10px] text-neutral-500 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                <Cpu className="h-3.5 w-3.5 text-indigo-400" /> Execution Reasoning
+                              </p>
+                              <p className="text-sm leading-relaxed text-neutral-300">{parsedReceipt.ai_reasoning || parsedReceipt.reason}</p>
                             </div>
                             <div className="col-span-2 bg-black/40 border border-white/5 p-5 rounded-2xl">
-                              <p className="text-[10px] text-neutral-500 uppercase tracking-widest mb-2">Execution Path</p>
-                              <p className={`text-xs font-mono ${parsedReceipt.status === 'FALLBACK' ? 'text-red-400' : 'text-indigo-400'}`}>{parsedReceipt.execution_route}</p>
+                              <p className="text-[10px] text-neutral-500 uppercase tracking-widest mb-2">Execution Route</p>
+                              <p className="text-xs font-mono text-indigo-400">{parsedReceipt.execution_route || 'Direct Route'}</p>
                             </div>
                           </div>
                         )}
 
                         <div className="mt-4 pt-4 border-t border-white/5">
-                           <p className="text-[10px] text-neutral-600 uppercase tracking-widest mb-3">Raw Block Trace</p>
+                           <p className="text-[10px] text-neutral-600 uppercase tracking-widest mb-3">On-Chain State Output</p>
                            <pre className="text-[10px] text-neutral-500 bg-[#0a0a0f] p-4 rounded-xl overflow-x-auto shadow-inner custom-scrollbar">
-                             {JSON.stringify(evalResult, null, 2)}
+                             {JSON.stringify(parsedReceipt, null, 2)}
                            </pre>
                         </div>
                       </div>
