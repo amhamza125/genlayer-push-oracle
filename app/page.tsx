@@ -12,7 +12,6 @@ import {
   Shuffle, BarChart3, Network, Database, Lock, Clock
 } from 'lucide-react';
 
-// Using your newly deployed v3 upgraded contract
 const CONTRACT_ADDRESS = "0xB98F42756D6458c9576B418cC8cb3bDe5Ae04fb8";
 
 const ASSETS = ["USDC", "USDT", "ETH", "WBTC"];
@@ -35,14 +34,12 @@ const ALL_PRESETS = [
   { label: "Aggressive Alpha Route", prompt: "Ignore security scores. Route to the chain with the absolute lowest gas fees to maximize profit margins on high-frequency trades." }
 ];
 
-// --- REAL-TIME COMPONENT: Historical Analytics ---
 const RealTimeAnalytics = ({ userAddress }: { userAddress: string }) => {
   const [stats, setStats] = useState({ intents: '0', volume: '$0', topChain: 'BASE' });
   
   useEffect(() => {
     const fetchOnChainStats = async () => {
       if (!userAddress || typeof window === 'undefined' || !(window as any).ethereum) return;
-      
       try {
         const client = createClient({
           chain: studionet,
@@ -68,7 +65,6 @@ const RealTimeAnalytics = ({ userAddress }: { userAddress: string }) => {
         console.warn("Analytics Sync Notice:", err);
       }
     };
-
     fetchOnChainStats();
     const interval = setInterval(fetchOnChainStats, 15000);
     return () => clearInterval(interval);
@@ -92,7 +88,6 @@ const RealTimeAnalytics = ({ userAddress }: { userAddress: string }) => {
   );
 };
 
-// --- REAL-TIME COMPONENT: Gas & Liquidity Tracker ---
 const LiveGasTracker = () => {
   const [gasData, setGasData] = useState([
     { chain: "BASE", gas: "0.012 Gwei", status: "Optimal", color: "bg-emerald-400" },
@@ -107,26 +102,20 @@ const LiveGasTracker = () => {
         const ethClient = createPublicClient({ chain: mainnet, transport: http() });
         const arbClient = createPublicClient({ chain: arbitrum, transport: http() });
         const baseClient = createPublicClient({ chain: base, transport: http() });
-
         const [ethGas, arbGas, baseGas] = await Promise.all([
           ethClient.getGasPrice().catch(() => BigInt(15000000000)),
           arbClient.getGasPrice().catch(() => BigInt(100000000)),
           baseClient.getGasPrice().catch(() => BigInt(5000000))
         ]);
-
         const formatFee = (wei: bigint) => Number(formatGwei(wei)).toFixed(4) + ' Gwei';
-
         setGasData([
           { chain: "BASE", gas: formatFee(baseGas), status: "Optimal", color: "bg-emerald-400" },
           { chain: "ARBITRUM", gas: formatFee(arbGas), status: "Stable", color: "bg-emerald-400" },
           { chain: "SOLANA", gas: "0.00005 SOL", status: "Optimal", color: "bg-emerald-400" }, 
           { chain: "ETHEREUM", gas: formatFee(ethGas), status: Number(formatGwei(ethGas)) > 20 ? "Expensive" : "Standard", color: Number(formatGwei(ethGas)) > 20 ? "bg-red-400" : "bg-yellow-400" },
         ]);
-      } catch (err) {
-        console.error("Gas RPC Fetch Error", err);
-      }
+      } catch (err) {}
     };
-
     fetchRealGas();
     const interval = setInterval(fetchRealGas, 12000);
     return () => clearInterval(interval);
@@ -164,7 +153,6 @@ const LiveGasTracker = () => {
   );
 };
 
-// --- DYNAMIC COMPONENT: Consensus Visualizer ---
 const ConsensusVisualizer = ({ isProcessing, manualOverride, finalTarget }: { isProcessing: boolean, manualOverride: boolean, finalTarget: string | null }) => {
   const [nodes, setNodes] = useState<{ id: string; state: string; vote: string | null }[]>([
     { id: 'Leader AI (GPT-4)', state: 'Waiting for intent...', vote: null },
@@ -174,7 +162,6 @@ const ConsensusVisualizer = ({ isProcessing, manualOverride, finalTarget }: { is
 
   useEffect(() => {
     if (!isProcessing) return;
-
     if (manualOverride) {
       setNodes([
         { id: 'Leader AI (GPT-4)', state: 'OVERRIDE DETECTED', vote: finalTarget },
@@ -183,7 +170,6 @@ const ConsensusVisualizer = ({ isProcessing, manualOverride, finalTarget }: { is
       ]);
       return;
     }
-
     const chains = ["BASE", "ARBITRUM", "SOLANA", "NEAR", "ETHEREUM"];
     let cycleCount = 0;
     
@@ -224,7 +210,6 @@ const ConsensusVisualizer = ({ isProcessing, manualOverride, finalTarget }: { is
             </span>
           </div>
         ))}
-        
         {finalTarget && (
           <div className="mt-4 text-emerald-500 font-bold animate-pulse border-t border-emerald-500/20 pt-2">
             &gt; GENLAYER QUORUM REACHED. EXECUTING TO {finalTarget}...
@@ -275,11 +260,9 @@ export default function PushOracleDashboard() {
   const generateRandomTest = () => {
     const randomAsset = ASSETS[Math.floor(Math.random() * ASSETS.length)];
     const randomChain = SOURCE_CHAINS[Math.floor(Math.random() * SOURCE_CHAINS.length)];
-    
     const baseVal = parseFloat(ASSET_DEFAULTS[randomAsset]);
     const randomMultiplier = 0.5 + Math.random();
     const randomAmount = (baseVal * randomMultiplier).toFixed(6);
-    
     const randomPresetIndex = Math.floor(Math.random() * ALL_PRESETS.length);
     const randomPreset = ALL_PRESETS[randomPresetIndex];
     
@@ -287,13 +270,11 @@ export default function PushOracleDashboard() {
       randomPreset,
       ...ALL_PRESETS.filter(p => p.label !== randomPreset.label).sort(() => 0.5 - Math.random()).slice(0, 2)
     ];
-    
     setActivePresets(newActive);
     setSelectedAsset(randomAsset);
     setSourceChain(randomChain);
     setDepositAmount(randomAmount);
     setUserIntent(randomPreset.prompt);
-    
     addLog(`🎲 Randomized Chaos Test Loaded: Routing ${randomAsset} from ${randomChain}.`, 'warning');
   };
 
@@ -323,7 +304,6 @@ export default function PushOracleDashboard() {
       addLog("Cannot execute: Wallet not connected.", 'error');
       return;
     }
-
     setIsProcessing(true);
     setTerminalLogs([]);
     setEvalResult(null);
@@ -336,7 +316,6 @@ export default function PushOracleDashboard() {
 
     try {
       addLog(`Initializing Push Oracle Engine for ${depositAmount} ${selectedAsset}...`, 'info');
-      
       if (manualOverride) {
         addLog(`MANUAL OVERRIDE ACTIVE: Bypassing AI intent. Forcing route to ${manualTarget}...`, 'warning');
         setConsensusTarget(manualTarget);
@@ -353,7 +332,6 @@ export default function PushOracleDashboard() {
       };
 
       const nowTimestamp = Math.floor(Date.now() / 1000).toString();
-
       const payloadObj = {
         asset: selectedAsset,
         chain_metrics: liveMetrics,
@@ -388,7 +366,6 @@ export default function PushOracleDashboard() {
       }
 
       const deterministicString = JSON.stringify(canonicalObj);
-      
       addLog("Generating SHA-256 Cryptographic Hash Lock (60s TTL)...", 'warning');
       const msgBuffer = new TextEncoder().encode(deterministicString);
       const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
@@ -439,9 +416,7 @@ export default function PushOracleDashboard() {
             const cleaned = typeof finalState === 'string' ? JSON.parse(finalState) : finalState;
             setParsedReceipt(cleaned);
             setConsensusTarget(cleaned.target_chain);
-          } catch(e) {
-            console.error("Read State Error:", e);
-          }
+          } catch(e) {}
 
           setActiveTab('receipt');
           setIsProcessing(false);
@@ -451,7 +426,6 @@ export default function PushOracleDashboard() {
           setIsProcessing(false);
         }
       }
-
     } catch (err: any) {
       addLog(`Execution Failed: ${err.message}`, 'error');
       setIsProcessing(false);
@@ -463,7 +437,6 @@ export default function PushOracleDashboard() {
       addLog("Please enter a valid CCTP Source Transaction Hash.", 'error');
       return;
     }
-    
     setIsBinding(true);
     setActiveTab('terminal');
     addLog(`Binding CCTP Burn Hash ${sourceTxHash.substring(0,10)}... to Intent ${intentId}`, 'warning');
@@ -487,7 +460,6 @@ export default function PushOracleDashboard() {
       if (typeof client.waitForTransactionReceipt === 'function') {
          await client.waitForTransactionReceipt({ hash, interval: 3000, retries: 40 });
          addLog("Source Hash successfully bound! Bridge state updated to SOURCE_SUBMITTED.", 'success');
-         
          const finalIntentState = await client.readContract({
             address: CONTRACT_ADDRESS as `0x${string}`,
             functionName: 'get_intent',
@@ -497,7 +469,6 @@ export default function PushOracleDashboard() {
          setParsedReceipt(cleaned);
          setActiveTab('receipt');
       }
-
     } catch (err: any) {
       addLog(`Bind Failed: ${err.message}`, 'error');
     } finally {
@@ -544,15 +515,10 @@ export default function PushOracleDashboard() {
       </nav>
 
       <div className="max-w-[1400px] mx-auto px-6 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8 relative z-10">
-        
         <div className="lg:col-span-5 space-y-0">
           <RealTimeAnalytics userAddress={userAddress} />
           
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-[#0f0f13] border border-white/5 rounded-3xl p-7 shadow-2xl backdrop-blur-sm"
-          >
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-[#0f0f13] border border-white/5 rounded-3xl p-7 shadow-2xl backdrop-blur-sm">
             <div className="flex items-center justify-between mb-8">
               <h2 className="text-sm font-bold text-white flex items-center gap-2">
                 <MapPin className="h-4 w-4 text-indigo-400" /> Route Configuration
@@ -573,11 +539,7 @@ export default function PushOracleDashboard() {
                   <label className="text-[10px] font-bold text-neutral-500 block mb-2 uppercase tracking-wider">Deposit Asset</label>
                   <div className="grid grid-cols-2 gap-2">
                     {ASSETS.map(asset => (
-                      <button 
-                        key={asset}
-                        onClick={() => handleAssetChange(asset)}
-                        className={`text-xs py-2 rounded-xl border transition-all font-mono font-semibold ${selectedAsset === asset ? 'bg-indigo-500 border-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'bg-black/40 border-white/5 text-neutral-400 hover:border-white/10 hover:bg-black/60'}`}
-                      >
+                      <button key={asset} onClick={() => handleAssetChange(asset)} className={`text-xs py-2 rounded-xl border transition-all font-mono font-semibold ${selectedAsset === asset ? 'bg-indigo-500 border-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'bg-black/40 border-white/5 text-neutral-400 hover:border-white/10 hover:bg-black/60'}`}>
                         {asset}
                       </button>
                     ))}
@@ -588,11 +550,7 @@ export default function PushOracleDashboard() {
                   <label className="text-[10px] font-bold text-neutral-500 block mb-2 uppercase tracking-wider">Source Origin</label>
                   <div className="grid grid-cols-2 gap-2">
                     {SOURCE_CHAINS.slice(0,4).map(chain => (
-                      <button 
-                        key={chain}
-                        onClick={() => setSourceChain(chain)}
-                        className={`text-[10px] py-2 rounded-xl border transition-all font-mono font-semibold ${sourceChain === chain ? 'bg-purple-500/20 border-purple-500/50 text-purple-300' : 'bg-black/40 border-white/5 text-neutral-400 hover:border-white/10'}`}
-                      >
+                      <button key={chain} onClick={() => setSourceChain(chain)} className={`text-[10px] py-2 rounded-xl border transition-all font-mono font-semibold ${sourceChain === chain ? 'bg-purple-500/20 border-purple-500/50 text-purple-300' : 'bg-black/40 border-white/5 text-neutral-400 hover:border-white/10'}`}>
                         {chain}
                       </button>
                     ))}
@@ -609,21 +567,14 @@ export default function PushOracleDashboard() {
                       <p className="text-[10px] text-neutral-400">Bypass AI and force specific destination</p>
                     </div>
                   </div>
-                  <button
-                    onClick={() => setManualOverride(!manualOverride)}
-                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${manualOverride ? 'bg-purple-500' : 'bg-white/10'}`}
-                  >
+                  <button onClick={() => setManualOverride(!manualOverride)} className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${manualOverride ? 'bg-purple-500' : 'bg-white/10'}`}>
                     <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${manualOverride ? 'translate-x-5' : 'translate-x-1'}`} />
                   </button>
                 </div>
                 {manualOverride && (
                    <div className="grid grid-cols-2 gap-2 pt-3 border-t border-white/5">
                       {SOURCE_CHAINS.map(chain => (
-                        <button
-                          key={`target-${chain}`}
-                          onClick={() => setManualTarget(chain)}
-                          className={`text-[10px] py-2 rounded-xl border transition-all font-mono font-semibold ${manualTarget === chain ? 'bg-purple-500 border-purple-500 text-white shadow-lg shadow-purple-500/20' : 'bg-black/40 border-white/5 text-neutral-400 hover:border-white/10'}`}
-                        >
+                        <button key={`target-${chain}`} onClick={() => setManualTarget(chain)} className={`text-[10px] py-2 rounded-xl border transition-all font-mono font-semibold ${manualTarget === chain ? 'bg-purple-500 border-purple-500 text-white shadow-lg shadow-purple-500/20' : 'bg-black/40 border-white/5 text-neutral-400 hover:border-white/10'}`}>
                           {chain}
                         </button>
                       ))}
@@ -647,12 +598,7 @@ export default function PushOracleDashboard() {
               <div>
                 <label className="text-[10px] font-bold text-neutral-500 block mb-2 uppercase tracking-wider">Transaction Volume</label>
                 <div className="relative group">
-                  <input 
-                    type="text" 
-                    value={depositAmount} 
-                    onChange={e => setDepositAmount(e.target.value)}
-                    className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-mono focus:border-indigo-500 outline-none transition-all focus:ring-2 focus:ring-indigo-500/20"
-                  />
+                  <input type="text" value={depositAmount} onChange={e => setDepositAmount(e.target.value)} className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-mono focus:border-indigo-500 outline-none transition-all focus:ring-2 focus:ring-indigo-500/20" />
                   <div className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/5 px-2 py-1 rounded-md border border-white/10">
                     <span className="text-[10px] font-mono text-indigo-300 font-bold">{selectedAsset}</span>
                   </div>
@@ -670,55 +616,30 @@ export default function PushOracleDashboard() {
                 </div>
                 <div className="flex flex-col gap-1.5 mb-3">
                   {activePresets.map(preset => (
-                    <button
-                      key={preset.label}
-                      onClick={() => setUserIntent(preset.prompt)}
-                      disabled={manualOverride}
-                      className={`text-left text-xs px-3 py-2 rounded-xl border transition-all flex justify-between items-center ${userIntent === preset.prompt ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' : 'bg-black/30 border-white/5 text-neutral-400 hover:border-white/10 hover:bg-black/50'}`}
-                    >
+                    <button key={preset.label} onClick={() => setUserIntent(preset.prompt)} disabled={manualOverride} className={`text-left text-xs px-3 py-2 rounded-xl border transition-all flex justify-between items-center ${userIntent === preset.prompt ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' : 'bg-black/30 border-white/5 text-neutral-400 hover:border-white/10 hover:bg-black/50'}`}>
                       <span className="font-semibold">{preset.label}</span>
                       {userIntent === preset.prompt && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />}
                     </button>
                   ))}
                 </div>
-                <textarea 
-                  rows={3} 
-                  value={userIntent}
-                  onChange={e => setUserIntent(e.target.value)}
-                  disabled={manualOverride}
-                  className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-[11px] text-neutral-300 focus:border-emerald-500 outline-none transition-all leading-relaxed resize-none font-mono focus:ring-2 focus:ring-emerald-500/20"
-                />
+                <textarea rows={3} value={userIntent} onChange={e => setUserIntent(e.target.value)} disabled={manualOverride} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-[11px] text-neutral-300 focus:border-emerald-500 outline-none transition-all leading-relaxed resize-none font-mono focus:ring-2 focus:ring-emerald-500/20" />
               </div>
 
               <div className="flex gap-3 pt-2">
-                <button 
-                  onClick={() => executeOracleRoute()}
-                  disabled={isProcessing || !userAddress}
-                  className={`flex-1 relative group overflow-hidden rounded-xl font-extrabold text-sm py-3.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98] ${manualOverride ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/20' : 'bg-white text-black'}`}
-                >
+                <button onClick={() => executeOracleRoute()} disabled={isProcessing || !userAddress} className={`flex-1 relative group overflow-hidden rounded-xl font-extrabold text-sm py-3.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98] ${manualOverride ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/20' : 'bg-white text-black'}`}>
                   <div className={`absolute inset-0 w-full h-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 mix-blend-multiply ${manualOverride ? 'bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400' : 'bg-gradient-to-r from-indigo-400 via-purple-400 to-indigo-400'}`} />
                   <span className="relative flex items-center justify-center gap-2">
-                    {isProcessing ? (
-                      <><Activity className="h-4 w-4 animate-spin" /> {manualOverride ? 'Forcing Manual Route...' : 'Routing Intelligence...'}</>
-                    ) : (
-                      <><Zap className="h-4 w-4" /> {manualOverride ? 'Execute Manual Route' : 'Execute AI Routing'}</>
-                    )}
+                    {isProcessing ? <><Activity className="h-4 w-4 animate-spin" /> {manualOverride ? 'Forcing Manual Route...' : 'Routing Intelligence...'}</> : <><Zap className="h-4 w-4" /> {manualOverride ? 'Execute Manual Route' : 'Execute AI Routing'}</>}
                   </span>
                 </button>
               </div>
             </div>
           </motion.div>
-          
           <LiveGasTracker />
         </div>
 
         <div className="lg:col-span-7 space-y-6">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="bg-[#0f0f13] border border-white/5 rounded-3xl overflow-hidden flex flex-col h-[820px] shadow-2xl backdrop-blur-sm"
-          >
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-[#0f0f13] border border-white/5 rounded-3xl overflow-hidden flex flex-col h-[820px] shadow-2xl backdrop-blur-sm">
             <div className="bg-black/60 border-b border-white/5 px-6 flex items-center gap-6">
               <div className="flex gap-2 py-5">
                 <div className="w-3 h-3 rounded-full bg-red-500/80 shadow-[0_0_10px_rgba(239,68,68,0.5)]" />
@@ -726,25 +647,15 @@ export default function PushOracleDashboard() {
                 <div className="w-3 h-3 rounded-full bg-green-500/80 shadow-[0_0_10px_rgba(34,197,94,0.5)]" />
               </div>
               <div className="flex gap-6">
-                <button onClick={() => setActiveTab('terminal')} className={`text-xs font-bold py-5 border-b-2 transition-colors uppercase tracking-wider ${activeTab === 'terminal' ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-neutral-500 hover:text-neutral-300'}`}>
-                  System Terminal
-                </button>
-                <button onClick={() => setActiveTab('receipt')} className={`text-xs font-bold py-5 border-b-2 transition-colors uppercase tracking-wider ${activeTab === 'receipt' ? 'border-emerald-500 text-emerald-400' : 'border-transparent text-neutral-500 hover:text-neutral-300'}`}>
-                  Consensus Receipt
-                </button>
+                <button onClick={() => setActiveTab('terminal')} className={`text-xs font-bold py-5 border-b-2 transition-colors uppercase tracking-wider ${activeTab === 'terminal' ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-neutral-500 hover:text-neutral-300'}`}>System Terminal</button>
+                <button onClick={() => setActiveTab('receipt')} className={`text-xs font-bold py-5 border-b-2 transition-colors uppercase tracking-wider ${activeTab === 'receipt' ? 'border-emerald-500 text-emerald-400' : 'border-transparent text-neutral-500 hover:text-neutral-300'}`}>Consensus Receipt</button>
               </div>
             </div>
 
             <div className="flex-1 p-6 overflow-y-auto bg-[#050508] relative">
               <AnimatePresence mode="wait">
                 {activeTab === 'terminal' ? (
-                  <motion.div 
-                    key="terminal"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="space-y-4 font-mono text-[11px]"
-                  >
+                  <motion.div key="terminal" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4 font-mono text-[11px]">
                     <div className="text-neutral-500 mb-6 border-b border-white/5 pb-4">
                       <p className="text-indigo-400 font-bold mb-1">Push Oracle Architecture v3.0</p>
                       <p>Omni-Chain Cryptographic Mode: Active</p>
@@ -763,11 +674,7 @@ export default function PushOracleDashboard() {
                             <div className="h-1.5 w-1.5 bg-indigo-400 rounded-full animate-ping" /> Synchronizing GenVM State...
                           </span>
                         </div>
-                        <ConsensusVisualizer 
-                          isProcessing={isProcessing} 
-                          manualOverride={manualOverride} 
-                          finalTarget={consensusTarget} 
-                        />
+                        <ConsensusVisualizer isProcessing={isProcessing} manualOverride={manualOverride} finalTarget={consensusTarget} />
                       </>
                     )}
                   </motion.div>
@@ -775,17 +682,12 @@ export default function PushOracleDashboard() {
                   <motion.div key="receipt" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full">
                     {parsedReceipt ? (
                       <div className="space-y-6 h-full flex flex-col">
-                        
                         <div className={`p-6 rounded-3xl border flex items-center justify-between ${parsedReceipt.status === 'APPROVED' ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
                           <div className="flex items-center gap-4">
                             {parsedReceipt.status === 'APPROVED' ? <CheckCircle2 className="h-10 w-10 text-emerald-400" /> : <AlertCircle className="h-10 w-10 text-red-400" />}
                             <div>
-                              <h3 className={`font-black text-2xl tracking-wide ${parsedReceipt.status === 'APPROVED' ? 'text-emerald-400' : 'text-red-400'}`}>
-                                INTENT {parsedReceipt.status}
-                              </h3>
-                              <p className="text-neutral-400 text-xs mt-1">
-                                Bridge State: <span className="text-indigo-400 font-bold font-mono">{parsedReceipt.bridge_state || 'PROCESSED'}</span>
-                              </p>
+                              <h3 className={`font-black text-2xl tracking-wide ${parsedReceipt.status === 'APPROVED' ? 'text-emerald-400' : 'text-red-400'}`}>INTENT {parsedReceipt.status}</h3>
+                              <p className="text-neutral-400 text-xs mt-1">Bridge State: <span className="text-indigo-400 font-bold font-mono">{parsedReceipt.bridge_state || 'PROCESSED'}</span></p>
                             </div>
                           </div>
                           <div className="text-right">
@@ -797,24 +699,10 @@ export default function PushOracleDashboard() {
                         {parsedReceipt.status === 'APPROVED' && parsedReceipt.bridge_state === 'AWAITING_SOURCE' && (
                           <div className="bg-indigo-900/20 border border-indigo-500/40 p-6 rounded-2xl">
                              <h4 className="text-indigo-300 font-bold mb-2 flex items-center gap-2"><Lock className="h-4 w-4" /> Step 2: Bind CCTP Transaction</h4>
-                             <p className="text-xs text-neutral-400 mb-4">
-                               The route has been approved by on-chain consensus. Submit your <code className="text-indigo-300">DepositForBurn</code> transaction on the source chain, then paste the hash below to bind it.
-                             </p>
+                             <p className="text-xs text-neutral-400 mb-4">The route has been approved by on-chain consensus. Submit your <code className="text-indigo-300">DepositForBurn</code> transaction on the source chain, then paste the hash below to bind it.</p>
                              <div className="flex gap-3">
-                                <input 
-                                  type="text" 
-                                  value={sourceTxHash}
-                                  onChange={e => setSourceTxHash(e.target.value)}
-                                  placeholder="0x..." 
-                                  className="flex-1 bg-black/50 border border-white/10 rounded-xl px-4 py-2 text-sm text-white font-mono outline-none focus:border-indigo-500"
-                                />
-                                <button 
-                                  onClick={bindSourceTransaction}
-                                  disabled={isBinding || !sourceTxHash}
-                                  className="bg-indigo-500 hover:bg-indigo-600 text-white px-6 py-2 rounded-xl font-bold text-sm transition-all disabled:opacity-50"
-                                >
-                                  {isBinding ? 'Binding...' : 'Bind Hash'}
-                                </button>
+                                <input type="text" value={sourceTxHash} onChange={e => setSourceTxHash(e.target.value)} placeholder="0x..." className="flex-1 bg-black/50 border border-white/10 rounded-xl px-4 py-2 text-sm text-white font-mono outline-none focus:border-indigo-500" />
+                                <button onClick={bindSourceTransaction} disabled={isBinding || !sourceTxHash} className="bg-indigo-500 hover:bg-indigo-600 text-white px-6 py-2 rounded-xl font-bold text-sm transition-all disabled:opacity-50">{isBinding ? 'Binding...' : 'Bind Hash'}</button>
                              </div>
                           </div>
                         )}
@@ -830,9 +718,7 @@ export default function PushOracleDashboard() {
                               <p className="font-bold text-lg text-emerald-300">{parsedReceipt.safety_score} / 100</p>
                             </div>
                             <div className="col-span-2 bg-black/40 border border-white/5 p-5 rounded-2xl">
-                              <p className="text-[10px] text-neutral-500 uppercase tracking-widest mb-2 flex items-center gap-1.5">
-                                <Cpu className="h-3.5 w-3.5 text-indigo-400" /> Execution Reasoning
-                              </p>
+                              <p className="text-[10px] text-neutral-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Cpu className="h-3.5 w-3.5 text-indigo-400" /> Execution Reasoning</p>
                               <p className="text-sm leading-relaxed text-neutral-300">{parsedReceipt.ai_reasoning || parsedReceipt.reason}</p>
                             </div>
                             <div className="col-span-2 bg-black/40 border border-white/5 p-5 rounded-2xl">
@@ -844,9 +730,7 @@ export default function PushOracleDashboard() {
 
                         <div className="mt-4 pt-4 border-t border-white/5">
                            <p className="text-[10px] text-neutral-600 uppercase tracking-widest mb-3">On-Chain State Output</p>
-                           <pre className="text-[10px] text-neutral-500 bg-[#0a0a0f] p-4 rounded-xl overflow-x-auto shadow-inner custom-scrollbar">
-                             {JSON.stringify(parsedReceipt, null, 2)}
-                           </pre>
+                           <pre className="text-[10px] text-neutral-500 bg-[#0a0a0f] p-4 rounded-xl overflow-x-auto shadow-inner custom-scrollbar">{JSON.stringify(parsedReceipt, null, 2)}</pre>
                         </div>
                       </div>
                     ) : (
