@@ -1,0 +1,392 @@
+{
+  "contract": "0x9799957f6f819fa8D80DB7634BFF9B8026304b24",
+  "scenarios": [
+    {
+      "name": "setup: v4 deployed",
+      "pass": true,
+      "detail": "4.0 (Dual-Source Oracle + Hardened Governance)"
+    },
+    {
+      "name": "setup: operational",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "setup: funded second wallet",
+      "pass": true,
+      "detail": "0xf197AbFaEEc704774e00f1baeD1f52237c1022CE"
+    },
+    {
+      "name": "A1 non-owner cannot pause",
+      "pass": true,
+      "detail": "reverted as expected (Exception: Only the protocol owner may call this function)"
+    },
+    {
+      "name": "A2 owner pause blocks routing",
+      "pass": true,
+      "detail": "executed cleanly"
+    },
+    {
+      "name": "A2b routing while paused reverts",
+      "pass": true,
+      "detail": "reverted as expected (Exception: Nexus Protocol is currently paused by governance)"
+    },
+    {
+      "name": "A2c owner unpause",
+      "pass": true,
+      "detail": "executed cleanly"
+    },
+    {
+      "name": "A3 score 0 rejected",
+      "pass": true,
+      "detail": "reverted as expected (between 1 and 100)"
+    },
+    {
+      "name": "A3b score 101 rejected",
+      "pass": true,
+      "detail": "reverted as expected (between 1 and 100)"
+    },
+    {
+      "name": "A3c score 80 accepted",
+      "pass": true,
+      "detail": "executed cleanly"
+    },
+    {
+      "name": "A3d overview reflects 80",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "A3e score restored to 75",
+      "pass": true,
+      "detail": "executed cleanly"
+    },
+    {
+      "name": "A4 unknown chain pause rejected",
+      "pass": true,
+      "detail": "reverted as expected (not supported)"
+    },
+    {
+      "name": "A4b pause SOLANA",
+      "pass": true,
+      "detail": "executed cleanly"
+    },
+    {
+      "name": "A4c routing from paused chain reverts",
+      "pass": true,
+      "detail": "reverted as expected (Exception: Source chain is currently paused)"
+    },
+    {
+      "name": "A4d unpause SOLANA",
+      "pass": true,
+      "detail": "executed cleanly"
+    },
+    {
+      "name": "A5 non-owner cannot pause asset",
+      "pass": true,
+      "detail": "reverted as expected (Only the protocol owner)"
+    },
+    {
+      "name": "A5b pause USDC",
+      "pass": true,
+      "detail": "executed cleanly"
+    },
+    {
+      "name": "A5c routing paused asset reverts",
+      "pass": true,
+      "detail": "reverted as expected (Exception: Asset is currently paused)"
+    },
+    {
+      "name": "A5d unpause USDC",
+      "pass": true,
+      "detail": "executed cleanly"
+    },
+    {
+      "name": "A6 block sender",
+      "pass": true,
+      "detail": "executed cleanly"
+    },
+    {
+      "name": "A6b blocked sender reverts",
+      "pass": true,
+      "detail": "reverted as expected (Exception: Sender is blocked by protocol governance)"
+    },
+    {
+      "name": "A6c unblock sender",
+      "pass": true,
+      "detail": "executed cleanly"
+    },
+    {
+      "name": "B1 hash mismatch reverts",
+      "pass": true,
+      "detail": "reverted as expected (Exception: Cryptographic verification failed: SHA-256 mismatch)"
+    },
+    {
+      "name": "B2 malformed JSON reverts",
+      "pass": true,
+      "detail": "reverted as expected (Exception: Malformed JSON payload string)"
+    },
+    {
+      "name": "B3 missing key reverts",
+      "pass": true,
+      "detail": "reverted as expected (Exception: Missing mandatory payload parameter: asset)"
+    },
+    {
+      "name": "B4 stale payload reverts",
+      "pass": true,
+      "detail": "reverted as expected (Exception: Payload stale. Outside the 60-second TTL (Age: 121s))"
+    },
+    {
+      "name": "B5 future timestamp reverts",
+      "pass": true,
+      "detail": "reverted as expected (Exception: Payload stale. Outside the 60-second TTL (Age: -118s))"
+    },
+    {
+      "name": "B6 unsupported chain reverts",
+      "pass": true,
+      "detail": "reverted as expected (Exception: Source chain is not supported by Nexus)"
+    },
+    {
+      "name": "B7 zero deposit reverts",
+      "pass": true,
+      "detail": "reverted as expected (Exception: Deposit value must be strictly positive)"
+    },
+    {
+      "name": "B7b negative deposit reverts",
+      "pass": true,
+      "detail": "reverted as expected (Exception: Deposit value must be strictly positive)"
+    },
+    {
+      "name": "B8 malformed source hash reverts",
+      "pass": true,
+      "detail": "reverted as expected (Exception: Source transaction hash is not valid 0x-prefixed 32-byte hex)"
+    },
+    {
+      "name": "B9a first registration ok",
+      "pass": true,
+      "detail": "V4T-MV7RUDZC-14"
+    },
+    {
+      "name": "B9 duplicate intent_id reverts",
+      "pass": true,
+      "detail": "reverted as expected (Exception: Intent ID already registered)"
+    },
+    {
+      "name": "B10 payload replay reverts",
+      "pass": true,
+      "detail": "reverted as expected (Exception: Payload has already been processed)"
+    },
+    {
+      "name": "C1 verdict recorded V4T-MV7RUDZC-16",
+      "pass": true,
+      "detail": "APPROVED src=primary,secondary fp=56e2d615..."
+    },
+    {
+      "name": "C2 pre-bound routing V4T-MV7RUDZC-17",
+      "pass": true,
+      "detail": "APPROVED/SOURCE_SUBMITTED"
+    },
+    {
+      "name": "C2b pre-bound hash stored",
+      "pass": true,
+      "detail": "0xcdbc1383c17568d8..."
+    },
+    {
+      "name": "D1 non-creator bind reverts",
+      "pass": true,
+      "detail": "reverted as expected (Exception: Only the intent creator can bind the hash)"
+    },
+    {
+      "name": "D2 bind malformed hash reverts",
+      "pass": true,
+      "detail": "reverted as expected (Exception: Source transaction hash is not valid 0x-prefixed 32-byte hex)"
+    },
+    {
+      "name": "D3 creator binds valid hash",
+      "pass": true,
+      "detail": "executed cleanly"
+    },
+    {
+      "name": "D3b bridge state SOURCE_SUBMITTED",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "D4 double bind reverts",
+      "pass": true,
+      "detail": "reverted as expected (Exception: Intent is not waiting for a source transaction)"
+    },
+    {
+      "name": "D5 reporter confirms source",
+      "pass": true,
+      "detail": "executed cleanly"
+    },
+    {
+      "name": "D6 non-reporter report reverts",
+      "pass": true,
+      "detail": "reverted as expected (Exception: Only the authorized Bridge Oracle can report status)"
+    },
+    {
+      "name": "D7 set_bridge_reporter(second)",
+      "pass": true,
+      "detail": "executed cleanly"
+    },
+    {
+      "name": "D7b old reporter rejected",
+      "pass": true,
+      "detail": "reverted as expected (Exception: Only the authorized Bridge Oracle can report status)"
+    },
+    {
+      "name": "D7c new reporter completes",
+      "pass": true,
+      "detail": "executed cleanly"
+    },
+    {
+      "name": "D7d terminal state locked",
+      "pass": true,
+      "detail": "reverted as expected (Exception: Intent is in a terminal state; no further transitions allowed)"
+    },
+    {
+      "name": "D7e reporter restored to owner",
+      "pass": true,
+      "detail": "executed cleanly"
+    },
+    {
+      "name": "D8 invalid transition reverts",
+      "pass": true,
+      "detail": "reverted as expected (Exception: Invalid status transition to COMPLETED)"
+    },
+    {
+      "name": "D9 non-creator cancel reverts",
+      "pass": true,
+      "detail": "reverted as expected (Exception: Only the intent creator can cancel the intent)"
+    },
+    {
+      "name": "D9b creator cancels",
+      "pass": true,
+      "detail": "executed cleanly"
+    },
+    {
+      "name": "D9c bridge state CANCELLED",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "D9d double cancel reverts",
+      "pass": true,
+      "detail": "reverted as expected (Exception: Only intents awaiting a source transaction can be cancelled)"
+    },
+    {
+      "name": "D9e report on cancelled reverts",
+      "pass": true,
+      "detail": "reverted as expected (Exception: Intent is in a terminal state; no further transitions allowed)"
+    },
+    {
+      "name": "D10 transfer ownership to second",
+      "pass": true,
+      "detail": "executed cleanly"
+    },
+    {
+      "name": "D10b old owner locked out",
+      "pass": true,
+      "detail": "reverted as expected (Exception: Only the protocol owner may call this function)"
+    },
+    {
+      "name": "D10c new owner pauses",
+      "pass": true,
+      "detail": "executed cleanly"
+    },
+    {
+      "name": "D10d ownership returned",
+      "pass": true,
+      "detail": "executed cleanly"
+    },
+    {
+      "name": "D10e owner unpauses",
+      "pass": true,
+      "detail": "executed cleanly"
+    },
+    {
+      "name": "E all txs FINALIZED",
+      "pass": true,
+      "detail": "56/56"
+    }
+  ],
+  "txs": [
+    "0x0d39ce758f4d4aff79b9f454da4e97dec08137092349acd2c651f5c0d9ee2833",
+    "0xd0ea213e54fd070c46aabe2be20189748a4c0433ea59693e2371c4551dbebc50",
+    "0x2ba72d619204960701502f12dc1f67a7b02d43bff71d6c88bf2c7ee948c7e6e7",
+    "0x783773163876dac6993c4610180524058903f73ec270db923417e6b6f9b64ea2",
+    "0x783773163876dac6993c4610180524058903f73ec270db923417e6b6f9b64ea2",
+    "0x92f0f592f88a64a8122e90018a3dd930f050daa812a961f7a7e2fa6616739350",
+    "0x0f17f2af56610eebc65bf3bb753d6e7d6bffd886fa50149a9aaaaf8dbaff5f01",
+    "0x876e913015da34751b41f17aba101bda92fb35c136751161fc43682adea9a8bb",
+    "0x6f88c62907556679445321fc61653abf63ac556c44278eab619ccfb8522b1e3a",
+    "0x20e4ce6e5f00f6cb540fedc3a733ca1e5b5ef3b12b29b890648c7fa6359dfa25",
+    "0xae4369430044ecb94a4fdd10343a0a95f57dc996edbf721f11e0ee56907ad281",
+    "0xa26ff8c5047f7129fcc7dc63d7bce0a7ecc1d04a193126b0c9a44a3af26f56cc",
+    "0xabfd2aa79613bd0defe698ce794d05a7de1f1dee5aec9c9f8f456c0035a51563",
+    "0xabfd2aa79613bd0defe698ce794d05a7de1f1dee5aec9c9f8f456c0035a51563",
+    "0x4ecee2c68ee6137e59e5ebf24628a9c96ee19631c9ff831ed533fb627e519bdb",
+    "0x33cc8e3be232ef033995cda38987556b29d9584241cfb4f6fb7f5e3c9ecf6278",
+    "0x058ee591ba1ba12f61c0f5d3c28cdd71cbe34b5999672f36f62c2d493ad7a876",
+    "0x29b71044e9ef1f52d7dc9d7316c4c7b47af21c4082b2d01884703aebb26de919",
+    "0x29b71044e9ef1f52d7dc9d7316c4c7b47af21c4082b2d01884703aebb26de919",
+    "0x5ada21029ba415eaf5988ecd3579f7e38ed53cd1bcf7b5348d64d9c966da4e37",
+    "0x17189171317c92f5fd493594c8d5530db676f0163a0a388458794092c8bc0336",
+    "0xa9569a8be301e6bf2cf9b44030c4f2528728c018ccba87d790340ba26680a9d8",
+    "0xa9569a8be301e6bf2cf9b44030c4f2528728c018ccba87d790340ba26680a9d8",
+    "0xe2f2a4f0c3e19740a0e651f4656f9a381405eef4eb680f817921b8177b809d24",
+    "0xee45c9097c788754c7390a439d8bc9cd7adfecb9ca4a818b1a7e86e5aaa4e1fd",
+    "0xee45c9097c788754c7390a439d8bc9cd7adfecb9ca4a818b1a7e86e5aaa4e1fd",
+    "0xcc7b7e65d989a4ff7d98a20c1145605d94050c0fb06530884d9defe56fb370b3",
+    "0xcc7b7e65d989a4ff7d98a20c1145605d94050c0fb06530884d9defe56fb370b3",
+    "0x1f1d331899121238bbf305ee70c426f481671868dcef0df467f7bb1e9f656ed7",
+    "0x1f1d331899121238bbf305ee70c426f481671868dcef0df467f7bb1e9f656ed7",
+    "0x989bfc05a2436849166e09232deabe0b9c5e3f96f7de93243d768d322648ff38",
+    "0x989bfc05a2436849166e09232deabe0b9c5e3f96f7de93243d768d322648ff38",
+    "0x69f48fdb9d85d99cd03efe8430f40d4d5f2120ef6748f3f1693045bcf3dfd544",
+    "0x69f48fdb9d85d99cd03efe8430f40d4d5f2120ef6748f3f1693045bcf3dfd544",
+    "0x9067c44bfcd1de019ee712d3a8ff7f190ea8cea93b8c7918a11a2502a234511b",
+    "0x9067c44bfcd1de019ee712d3a8ff7f190ea8cea93b8c7918a11a2502a234511b",
+    "0xfc2d374d2a3df7e4f4adce1cae0a7cb9fe4b463ea6ee6b6035d68f091955751f",
+    "0xfc2d374d2a3df7e4f4adce1cae0a7cb9fe4b463ea6ee6b6035d68f091955751f",
+    "0x8e905aa35a901716bb49287532d804246f2f307dae69b0dc98492d54dfcbc9f4",
+    "0x8e905aa35a901716bb49287532d804246f2f307dae69b0dc98492d54dfcbc9f4",
+    "0xb013a791ee7b61f4c986ff7aefcdf7237d447c2ce64a7730558c0574d54ec77d",
+    "0xb013a791ee7b61f4c986ff7aefcdf7237d447c2ce64a7730558c0574d54ec77d",
+    "0x453de39cc7fb0be8770dcd76820ef9d7f426ff56bcec1aea6ad1f8b6aa249e83",
+    "0x00398ab78f6e684ddeb0b2a4a585639770b00bcf94b456d1ccdd09bb90dcd935",
+    "0x00398ab78f6e684ddeb0b2a4a585639770b00bcf94b456d1ccdd09bb90dcd935",
+    "0x06dafbc233c7e2866bab91ffcc8726f12acaa9b6024e2f5d87ee4d03f6209dbf",
+    "0x06dafbc233c7e2866bab91ffcc8726f12acaa9b6024e2f5d87ee4d03f6209dbf",
+    "0xbfd43b1042109e18c09dfee12a9c0504f7e1eb6e0338d94a9012de8dc77ed501",
+    "0xeac16a3074b27910ccc5664c3690206bcca55c769cb4d76f51d2c0ff424dad3a",
+    "0x8b1439171c332931ee481a0282cc275a5dddfd4f490e502400fc57f749f31727",
+    "0x831ea37d4fcfe7dbffcacad875a05fd9ddc64159c02adde1952ef3d07210a02a",
+    "0x40c9139b175c6625793320dbbc1900118639b79efa8fcf26099ab60a2d363d8a",
+    "0x2ddbf17ea3fc1ad3ff914787aaad0c88987f2d3471fd9c54109b1565b286b192",
+    "0xf39e52429b770546a0a8e545e15a1cbd8480a90ce61783c6e2fc3a20457cb8cd",
+    "0x562793021793f3a24fe768fb9d62a5930798108a5f30d2eae78a6491567e1778",
+    "0x73fbdbb1d17dbdedd94332948d74b309475fc2c12ab8059505f5433a88efb628",
+    "0x7806feba6b29ba7e3fbc026c2df8405899369a994e277d8ca244e96e6b35568e",
+    "0x5cf4c0a76e288e4858d28ee6b50e553555d6e205f4d17ad7ecb33b969a408f18",
+    "0x38df2bfe4fc890d98223c0167ce4ce39c67dbf063600b216effa10626fc1cd2e",
+    "0x75fd5a73deac7f8bad4d3606269411f3d835f093ae5b090cae84ddfe827b2666",
+    "0x71f7512a0f8b1a82419ea988b3dfaae7ffb07911d7432d13ede6771d8e90913f",
+    "0x361354c7036337b32a29e4f987dffa0bc028940724e383e7c0e7bdf5ebae60e5",
+    "0x3718897e65472c4716113b08167f4098d5b2f5eefe94b990e8547af4245d7470",
+    "0x945fae9cfffa913471bc06348cfe0cff758b24b5978d22a43ab627dd77351e1b",
+    "0xcb3ea7c1924bf399e5587ab242d94d479b1807e5bd367927c96d5cc8fe58203d",
+    "0x8a4f7b3ea39b7d73898e117023f36b5abc367a71a83f1f3c7912927915e3c6a3",
+    "0xd32bf7cd3aa0b5397744736e23137b134e71f6b0f185d37598a3f37ba51b2e22",
+    "0x826d9d40aee4f0c49a48105daa5772c279f0941654dddacbc0305749d79253fe",
+    "0xd7b4a461d632656f42ce17a27f36ad4164665c688889b105d0d08825d82efe41",
+    "0x78be48d648141def92a061ea4da2a48520843d2279f73d37d8d80ee3bb8426d4",
+    "0x491922c41d709472128313810589863a83c975ab1cd3e8ae8168fcd0dc7e14e5"
+  ],
+  "summary": {
+    "passed": 62,
+    "total": 62
+  }
+}

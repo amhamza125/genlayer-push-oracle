@@ -1,28 +1,55 @@
-# Cryptographic Push Oracle v3.0 for GenLayer
+# Cryptographic Push Oracle v4 for GenLayer
 
-A multi-LLM Cryptographic Push Oracle for GenLayer, securely routing cross-chain DeFi intents using autonomous web fetching and stateful execution lifecycles.
+A GenLayer Intelligent Contract that routes cross-chain DeFi intents through
+multi-validator AI consensus. Version 4 adds a dual-source web oracle, strict
+verdict validation, finished governance, and a cancel flow with permanent
+terminal states.
 
-## Overview
+## Live deployments (StudioNet, chain 61999)
 
-Standard smart contracts cannot dynamically evaluate live, multi-chain data without relying on centralized oracles.
+- **v4 test deployment:** [0x9799957f6f819fa8D80DB7634BFF9B8026304b24](https://explorer-studio.genlayer.com/address/0x9799957f6f819fa8D80DB7634BFF9B8026304b24) — adversarial suite: 62/62 passed, 56/56 write txs finalized
+- **v4 video deployment:** [0xD1577536E1ef35c5bb27bbDCFfcAD02523bfa8A0](https://explorer-studio.genlayer.com/address/0xD1577536E1ef35c5bb27bbDCFfcAD02523bfa8A0) — 5 real intents on 5 chains (see `docs/VERIFICATION.md`)
+- **v3 (legacy):** `0xB98F42756D6458c9576B418cC8cb3bDe5Ae04fb8`
 
-This project solves this by introducing a **Cryptographic Push Oracle Architecture**, which has been massively upgraded in V3 to include autonomous data verification:
+**Dashboard:** https://genlayer-push-oracle.vercel.app/ — reads live from the
+configured contract; paste any v4 address into the contract switcher.
 
-1. **The Frontend** pulls live market telemetry (gas fees, liquidity depth, security scores) across multiple chains.
-2. **Canonicalization & Hash Locks (V3 TTL):** The data is deterministically sorted, timestamped with a strict 60-second TTL, and locked into a SHA-256 hash to prevent replay attacks or stale data injection.
-3. **Autonomous Web Verification (V3):** During execution, GenLayer's AI nodes utilize `gl.nondet.web.get` to independently fetch live DeFi API data from the internet, cross-referencing it against the user's pushed payload to detect manipulation.
-4. **Multi-LLM Consensus:** GenLayer's AI validators evaluate the verified payload against the user's natural language intent to autonomously approve the optimal route.
-5. **Two-Step Bridge Lifecycle (V3):** Once approved, users cryptographically bind their source CCTP `DepositForBurn` transaction hash to the contract, advancing the on-chain state from `AWAITING_SOURCE` to `SOURCE_SUBMITTED`.
+## What's new in v4
 
-## V3 Key Upgrades & Features
+1. **Dual-source web oracle** — the contract fetches market data from two
+   independent feeds (`api.llama.fi/chains` and `/v2/chains`). If both are
+   unreachable, it refuses to judge rather than trusting blind data.
+2. **Strict verdict validation** — the AI's answer must pick a supported chain
+   (Ethereum, Arbitrum, Base, Solana, Near), an allowlisted action, and a clean
+   0–100 safety score, or it is rejected.
+3. **Finished governance** — `set_asset_paused`, `set_sender_blocked`,
+   `set_bridge_reporter`, `transfer_ownership`, with threshold bounds (1–100)
+   and chain validation.
+4. **Cancel flow** — `cancel_intent` plus permanent terminal bridge states
+   (`COMPLETED`, `FAILED`, `CANCELLED`).
+5. **Oracle attestation** — every intent records which feeds were verified and a
+   fingerprint of the exact data judged.
 
-* **[NEW] Autonomous Web Oracle:** The GenVM contract natively fetches live internet data to cross-reference untrusted frontend telemetry.
-* **[NEW] Two-Step Execution State Machine:** Decoupled the AI routing logic from the physical bridge execution for secure cross-chain status tracking.
-* **[NEW] Deterministic TTL Guardrails:** 60-second payload age limits mathematically block stale market data injection.
-* **Dynamic Omni-Chain Telemetry:** Visualizes real-time market conditions and live API RPC data on the Next.js UI.
-* **AI Intent Presets:** Translates complex DeFi strategies into executable cross-chain routes.
+## Repository structure
 
-## Repository Structure
+- `contract_v4.py` — the v4 GenLayer Intelligent Contract
+- `app/` — the Aurora Light dashboard (Next.js, Vercel)
+- `docs/VERIFICATION.md` — deployment record, test results, video evidence
+- `tests/adversarial/` — runnable 62-scenario test suite + raw results
+- `contract v3.py` — previous version, kept for history
 
-* `/app/page.tsx`: The Next.js / Framer Motion interactive dashboard featuring the consensus visualizer and Step-2 bindings.
-* `contract v3.py`: The V3 GenLayer Python Intelligent Contract featuring the Autonomous Web Oracle, TTL guardrails, and the multi-LLM consensus engine.
+## Verify it yourself
+
+```bash
+cd tests/adversarial
+npm install
+node run.mjs
+```
+
+Keys come from environment variables — no private keys in this repo.
+
+## Deploying v4
+
+Paste `contract_v4.py` into [GenLayer Studio](https://studio.genlayer.com) and
+deploy from your wallet (you become the owner). Then set `DEFAULT_CONTRACT` in
+`app/page.tsx` to your new address and push — Vercel redeploys automatically.
